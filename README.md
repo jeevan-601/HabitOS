@@ -61,10 +61,8 @@ python -m venv .venv
 ### 3) Install dependencies
 
 ```bash
-pip install django
+pip install -r requirements.txt
 ```
-
-If you use additional packages in your environment, install them as needed.
 
 ### 4) Apply migrations
 
@@ -105,6 +103,51 @@ Before production deployment:
 - Configure DJANGO_CSRF_TRUSTED_ORIGINS
 - Use PostgreSQL instead of SQLite
 - Configure static and media storage
+
+## Deploy On Render
+
+This project is prepared for Render with:
+
+- `Procfile`
+- `runtime.txt`
+- `requirements.txt`
+- environment-aware Django settings in [habit_ai/settings.py](habit_ai/settings.py)
+
+### 1) Create services
+
+1. Create a PostgreSQL service in Render.
+2. Create a Web Service from this GitHub repo.
+
+### 2) Web service config
+
+- Build Command:
+
+```bash
+pip install -r requirements.txt && python manage.py collectstatic --noinput
+```
+
+- Start Command:
+
+```bash
+gunicorn habit_ai.wsgi:application
+```
+
+### 3) Required environment variables
+
+- `DJANGO_SECRET_KEY` = long random secret
+- `DJANGO_DEBUG` = `false`
+- `DJANGO_ALLOWED_HOSTS` = `your-app.onrender.com`
+- `DJANGO_CSRF_TRUSTED_ORIGINS` = `https://your-app.onrender.com`
+- `DATABASE_URL` = value from Render PostgreSQL service
+
+### 4) After first deploy
+
+Run once in Render shell:
+
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+```
 
 ## License
 
