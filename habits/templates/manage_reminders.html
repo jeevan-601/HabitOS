@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Manage Reminders - Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+    <h1 class="display-font mb-4">🔔 Manage Reminders</h1>
+
+    <div class="row">
+        {% if habits %}
+        {% for habit in habits %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="surface p-4">
+                <div class="d-flex align-items-start justify-content-between mb-3">
+                    <h5 class="fw-bold mb-0">{{ habit.name }}</h5>
+                    <span style="font-size:1.5rem;">{{ habit.icon }}</span>
+                </div>
+
+                {% if habit.reminders.all %}
+                <div class="mb-3">
+                    <small class="text-muted">Active Reminders:</small>
+                    <div class="mt-2">
+                        {% for reminder in habit.reminders.all %}
+                        <div class="badge bg-primary mb-2">
+                            ⏰ {{ reminder.remind_at|time:"H:i" }}
+                            {% if reminder.label %}
+                            ({{ reminder.label }})
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="small text-muted mb-3">No reminders set</p>
+                {% endif %}
+
+                <a href="{% url 'edit_habit' habit.id %}" class="btn btn-sm btn-outline-primary w-100">
+                    Edit Reminders
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-md-8 offset-md-2">
+            <div class="surface p-4 text-center">
+                <div style="font-size:2rem;margin-bottom:1rem;">📝</div>
+                <h5>No habits yet</h5>
+                <p class="text-muted mb-3">Create a habit first to set reminders</p>
+                <a href="{% url 'add_habit' %}" class="btn btn-primary">Create Habit</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

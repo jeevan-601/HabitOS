@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Habit Templates - Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+    <h1 class="display-font mb-4">✨ Habit Templates</h1>
+    <p class="text-muted mb-4">Browse popular habits to get started quickly</p>
+
+    <!-- Featured Templates -->
+    {% if featured_templates %}
+    <div class="mb-5">
+        <h3 class="mb-3">Featured Templates</h3>
+        <div class="row">
+            {% for template in featured_templates %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="surface p-4 h-100">
+                    <div style="font-size:2.5rem;margin-bottom:0.75rem;">{{ template.icon }}</div>
+                    <h5 class="fw-bold mb-2">{{ template.name }}</h5>
+                    <p class="small text-muted mb-3">{{ template.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge" style="background-color:rgba(37,99,235,0.2);color:var(--brand);">{{ template.get_category_display }}</span>
+                        <span class="small text-muted">{{ template.usage_count }} uses</span>
+                    </div>
+                    <form method="POST" action="{% url 'use_template' template.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-primary w-100">Create from Template</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- By Category -->
+    {% for category, templates in templates_by_category.items %}
+    {% if templates %}
+    <div class="mb-5">
+        <h3 class="mb-3">{{ category }}</h3>
+        <div class="row">
+            {% for template in templates|slice:":6" %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="surface p-4">
+                    <div style="font-size:2rem;margin-bottom:0.5rem;">{{ template.icon }}</div>
+                    <h5 class="fw-bold mb-2">{{ template.name }}</h5>
+                    <p class="small text-muted mb-3">{{ template.description }}</p>
+                    <form method="POST" action="{% url 'use_template' template.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Use</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}

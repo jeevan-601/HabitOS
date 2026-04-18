@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Habit Dashboard{% endblock %}
+
+{% block topnav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+    <section class="surface p-4 p-lg-5 mb-4">
+        <div class="hero-banner">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
+                <div>
+                    <div class="text-uppercase fw-semibold small muted-text">Daily Control Center</div>
+                    <h1 class="display-font fw-bold mt-2 mb-2">Habit Dashboard</h1>
+                    <p class="mb-0 muted-text">Track consistency, complete tasks, and maintain momentum every day.</p>
+                </div>
+                <a href="{% url 'add_habit' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">+ Add Habit</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Total Habits</div>
+                <div class="display-font fs-2 fw-bold mt-2">{{ habit_data|length }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Current Streak Max</div>
+                <div id="maxStreakValue" class="display-font fs-2 fw-bold mt-2">0</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Tasks Completed Today</div>
+                <div id="completedTasksValue" class="display-font fs-2 fw-bold mt-2">0</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="surface p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="display-font fs-4 fw-bold mb-0">Today Checklist</h2>
+            <span class="small muted-text">Only scheduled habits for today</span>
+        </div>
+        <div class="d-grid gap-2">
+            {% for item in today_habits %}
+            <div class="surface-strong p-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <span>{{ item.habit.icon }}</span>
+                    <strong>{{ item.habit.name }}</strong>
+                </div>
+                <span class="badge {% if item.today_status == 'completed' %}text-bg-success{% elif item.today_status == 'skipped' %}text-bg-warning{% elif item.today_status == 'failed' %}text-bg-danger{% else %}text-bg-secondary{% endif %}">
+                    {{ item.today_status|title }}
+                </span>
+            </div>
+            {% empty %}
+            <div class="muted-text">No habits scheduled for today.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="surface p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h2 class="display-font fs-4 fw-bold mb-1">Your Habits</h2>
+                <p class="mb-0 small muted-text">Routines that shape your day.</p>
+            </div>
+            <a href="{% url 'add_habit' %}" class="btn btn-outline-primary rounded-pill">+ Add Habit</a>
+        </div>
+
+        <div class="d-grid gap-3">
+            {% for item in habit_data %}
+            <article class="surface-strong p-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <h3 class="h5 mb-1">{{ item.habit.icon }} {{ item.habit.name }}</h3>
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                            <span class="badge text-bg-warning" data-streak="{{ item.streak }}">{{ item.streak }} day streak</span>
+                            <span class="badge text-bg-info">{{ item.completion_rate }}% completion</span>
+                            <span class="badge text-bg-light">{{ item.habit.get_category_display }}</span>
+                            <span class="badge text-bg-light">{{ item.habit.get_difficulty_display }}</span>
+                            <span class="badge text-bg-light">{{ item.habit.get_frequency_display }}</span>
+                        </div>
+                        {% if item.habit.goal %}
+                        <div class="small muted-text mb-1">Goal: {{ item.habit.goal }}</div>
+                        {% endif %}
+                        {% if item.habit.frequency == 'custom' %}
+                        <div class="small muted-text mb-1">Custom days: {{ item.habit.custom_days_label }}</div>
+                        {% endif %}
+                        {% if item.reminders %}
+                        <div class="small muted-text">
+                            Reminders:
+                            {% for reminder in item.reminders %}
+                            <span class="badge text-bg-light">{{ reminder.remind_at|time:'H:i' }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <form method="POST" action="{% url 'update_habit_status' item.habit.id 'completed' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">Complete</button>
+                        </form>
+                        <form method="POST" action="{% url 'update_habit_status' item.habit.id 'skipped' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3">Skip</button>
+                        </form>
+                        <form method="POST" action="{% url 'update_habit_status' item.habit.id 'failed' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3">Fail</button>
+                        </form>
+                        <form method="POST" action="{% url 'delete_habit' item.habit.id %}" onsubmit="return confirm('Delete this habit?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Delete</button>
+                        </form>
+                        <a href="{% url 'edit_habit' item.habit.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+            <div class="surface-strong p-4 text-center muted-text">No habits yet. Start with one small routine.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="surface p-4">
+        <div class="mb-3">
+            <h2 class="display-font fs-4 fw-bold mb-1">Today's Tasks</h2>
+            <p class="mb-0 small muted-text">Capture and complete what matters now.</p>
+        </div>
+
+        <form method="POST" action="{% url 'add_daily_task' %}" class="row g-2 mb-3">
+            {% csrf_token %}
+            <div class="col-12 col-md-9">
+                <input type="text" name="title" placeholder="Add a task for today" required class="form-control form-control-lg rounded-pill">
+            </div>
+            <div class="col-12 col-md-3 d-grid">
+                <button type="submit" class="btn btn-primary btn-lg rounded-pill">Add Task</button>
+            </div>
+        </form>
+
+        <div class="d-grid gap-3">
+            {% for task in today_tasks %}
+            <article class="surface-strong p-3" data-task-completed="{% if task.completed %}1{% else %}0{% endif %}">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <form method="POST" action="{% url 'toggle_daily_task' task.id %}">
+                            {% csrf_token %}
+                            <input type="checkbox" class="form-check-input" {% if task.completed %}checked{% endif %} onchange="this.form.submit()" aria-label="Toggle task completion">
+                        </form>
+                        <span class="{% if task.completed %}text-decoration-line-through text-secondary{% endif %}">{{ task.title }}</span>
+                    </div>
+                    <form method="POST" action="{% url 'delete_daily_task' task.id %}" onsubmit="return confirm('Delete this task?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Delete</button>
+                    </form>
+                </div>
+            </article>
+            {% empty %}
+            <div class="surface-strong p-4 text-center muted-text">No tasks today. Add one and keep moving.</div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        const streakNodes = document.querySelectorAll('[data-streak]');
+        let maxStreak = 0;
+        streakNodes.forEach((node) => {
+            const value = Number(node.getAttribute('data-streak') || 0);
+            if (value > maxStreak) maxStreak = value;
+        });
+
+        const maxStreakEl = document.getElementById('maxStreakValue');
+        if (maxStreakEl) maxStreakEl.textContent = String(maxStreak);
+
+        const completedTasks = document.querySelectorAll('[data-task-completed="1"]');
+        const completedEl = document.getElementById('completedTasksValue');
+        if (completedEl) completedEl.textContent = String(completedTasks.length);
+    })();
+</script>
+{% endblock %}

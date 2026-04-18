@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+    <section class="surface p-4 p-lg-5 mb-4">
+        <div class="hero-banner">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" alt="{{ profile_user.username }} avatar" class="user-avatar" style="width:72px;height:72px;">
+                    {% else %}
+                    <span class="user-avatar-fallback" style="width:72px;height:72px;font-size:1.5rem;">{{ profile_user.username|first|upper }}</span>
+                    {% endif %}
+                    <div>
+                        <div class="text-uppercase fw-semibold small muted-text">Profile</div>
+                        <h1 class="display-font fw-bold mt-2 mb-2">{{ profile_user.username }}</h1>
+                        <p class="mb-0 muted-text">{{ profile.status_text }}</p>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if profile_row %}
+                    <div class="surface-strong px-3 py-2 text-center">
+                        <div class="fw-bold" style="font-size: 1.1rem; line-height: 1;">🏆</div>
+                        <div class="small muted-text mt-1">Rank</div>
+                        <div class="fw-bold">#{{ profile_row.rank }}</div>
+                    </div>
+                    {% endif %}
+                    {% if can_send_kudos %}
+                    <div class="surface-strong px-3 py-2 text-center">
+                        <div class="fw-bold" style="font-size: 1.1rem; line-height: 1;">👏</div>
+                        <div class="small muted-text mt-1">Kudos</div>
+                        <div class="fw-bold">{{ profile_row.kudos_received|default:0 }}</div>
+                    </div>
+                    <form method="POST" action="{% url 'send_kudos' profile_user.username %}" class="d-flex gap-2 align-items-center">
+                        {% csrf_token %}
+                        <input type="text" name="message" class="form-control rounded-pill" placeholder="Leave a note" maxlength="180">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Kudos</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Current Streak</div>
+                <div class="display-font fs-2 fw-bold mt-2">{{ profile_row.current_streak|default:0 }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Completed Logs</div>
+                <div class="display-font fs-2 fw-bold mt-2">{{ profile_row.completed_logs|default:0 }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Kudos</div>
+                <div class="display-font fs-2 fw-bold mt-2">{{ profile_row.kudos_received|default:0 }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="surface-strong p-4 h-100">
+                <div class="small muted-text">Habits</div>
+                <div class="display-font fs-2 fw-bold mt-2">{{ profile_row.habit_count|default:0 }}</div>
+            </div>
+        </div>
+    </section>
+
+    {% if suggested_profiles %}
+    <section class="surface p-4 mb-4">
+        <h2 class="display-font fs-4 fw-bold mb-1">People</h2>
+        <p class="small muted-text mb-3">Profiles near this rank, refreshed weekly.</p>
+        <div class="d-grid gap-2">
+            {% for row in suggested_profiles %}
+            <div class="surface-strong p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <div class="fw-semibold">{{ row.user.username }}</div>
+                    <div class="small muted-text">Rank #{{ row.rank }}</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'profile_detail' row.user.username %}" class="btn btn-sm btn-outline-secondary rounded-pill">View Profile</a>
+                    <form method="POST" action="{% url 'send_kudos' row.user.username %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="message" value="Great progress!">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill">Kudos</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="surface p-4 mb-4">
+        <h2 class="display-font fs-4 fw-bold mb-3">Habits</h2>
+        <div class="d-grid gap-2">
+            {% for habit in habits %}
+            <div class="surface-strong p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-semibold">{{ habit.icon }} {{ habit.name }}</div>
+                    <div class="small muted-text">{{ habit.get_frequency_display }} · {{ habit.get_category_display }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="muted-text">No habits yet.</div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

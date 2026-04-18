@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Habit{% else %}Add Habit{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 760px;">
+    <section class="surface p-4 p-lg-5">
+        <div class="hero-banner mb-4">
+            <div class="text-uppercase fw-semibold small muted-text">Create New Routine</div>
+            <h1 class="display-font fw-bold mt-2 mb-2">{% if is_edit %}Edit Habit{% else %}Add Habit{% endif %}</h1>
+            <p class="mb-0 muted-text">Build professional habit plans with goals, categories, reminders, and flexible scheduling.</p>
+        </div>
+
+        {% if not is_edit and preset_habits %}
+        <div class="mb-4">
+            <h2 class="h6 fw-bold mb-2">Quick Start Templates</h2>
+            <div class="d-flex flex-wrap gap-2">
+                {% for preset in preset_habits %}
+                <form method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="template_name" value="{{ preset.name }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill">{{ preset.icon }} {{ preset.name }}</button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="POST" class="d-grid gap-3">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-12">
+                <label for="habitName" class="form-label fw-semibold">Habit Name</label>
+                    <input id="habitName" type="text" name="name" value="{% if habit %}{{ habit.name }}{% endif %}" placeholder="For example: Read 20 minutes" required class="form-control form-control-lg rounded-pill">
+                </div>
+
+                <div class="col-12">
+                    <label for="habitGoal" class="form-label fw-semibold">Goal / Purpose</label>
+                    <input id="habitGoal" type="text" name="goal" value="{% if habit %}{{ habit.goal }}{% endif %}" placeholder="Why does this habit matter?" class="form-control rounded-pill">
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label for="habitCategory" class="form-label fw-semibold">Category</label>
+                    <select id="habitCategory" name="category" class="form-select rounded-pill">
+                        {% for value, label in habit_categories %}
+                        <option value="{{ value }}" {% if habit and habit.category == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label for="habitDifficulty" class="form-label fw-semibold">Difficulty</label>
+                    <select id="habitDifficulty" name="difficulty" class="form-select rounded-pill">
+                        {% for value, label in difficulty_choices %}
+                        <option value="{{ value }}" {% if habit and habit.difficulty == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label for="habitIcon" class="form-label fw-semibold">Icon</label>
+                    <input id="habitIcon" type="text" name="icon" value="{% if habit %}{{ habit.icon }}{% else %}✅{% endif %}" class="form-control rounded-pill" maxlength="8">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label for="habitColor" class="form-label fw-semibold">Color</label>
+                    <input id="habitColor" type="color" name="color" value="{% if habit %}{{ habit.color }}{% else %}#2563eb{% endif %}" class="form-control form-control-color">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label for="targetPerDay" class="form-label fw-semibold">Target / Day</label>
+                    <input id="targetPerDay" type="number" min="1" name="target_per_day" value="{% if habit %}{{ habit.target_per_day }}{% else %}1{% endif %}" class="form-control rounded-pill">
+                </div>
+
+                <div class="col-12">
+                    <label for="habitFrequency" class="form-label fw-semibold">Frequency</label>
+                    <select id="habitFrequency" name="frequency" class="form-select rounded-pill">
+                        {% for value, label in frequency_choices %}
+                        <option value="{{ value }}" {% if habit and habit.frequency == value %}selected{% elif not habit and value == 'daily' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Custom Days (for custom frequency)</label>
+                    {% with selected_days=habit.get_custom_days %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="0" {% if habit and 0 in selected_days %}checked{% endif %}>Mon</label>
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="1" {% if habit and 1 in selected_days %}checked{% endif %}>Tue</label>
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="2" {% if habit and 2 in selected_days %}checked{% endif %}>Wed</label>
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="3" {% if habit and 3 in selected_days %}checked{% endif %}>Thu</label>
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="4" {% if habit and 4 in selected_days %}checked{% endif %}>Fri</label>
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="5" {% if habit and 5 in selected_days %}checked{% endif %}>Sat</label>
+                        <label class="btn btn-outline-secondary btn-sm rounded-pill"><input class="form-check-input me-1" type="checkbox" name="custom_days" value="6" {% if habit and 6 in selected_days %}checked{% endif %}>Sun</label>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 pt-1">
+                <button type="submit" class="btn btn-primary rounded-pill px-4">{% if is_edit %}Save Changes{% else %}Add Habit{% endif %}</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+            </div>
+        </form>
+
+        {% if is_edit and habit %}
+        <hr class="my-4">
+        <div>
+            <h2 class="h6 fw-bold mb-2">Reminders</h2>
+            <form method="POST" action="{% url 'add_habit_reminder' habit.id %}" class="row g-2 align-items-end mb-3">
+                {% csrf_token %}
+                <div class="col-12 col-md-4">
+                    <label for="reminderTime" class="form-label">Time</label>
+                    <input id="reminderTime" type="time" name="remind_at" class="form-control" required>
+                </div>
+                <div class="col-12 col-md-5">
+                    <label for="reminderLabel" class="form-label">Label</label>
+                    <input id="reminderLabel" type="text" name="label" class="form-control" placeholder="Morning reminder">
+                </div>
+                <div class="col-12 col-md-3 d-grid">
+                    <button type="submit" class="btn btn-outline-primary">Add Reminder</button>
+                </div>
+            </form>
+
+            <div class="d-grid gap-2">
+                {% for reminder in habit.reminders.all %}
+                <div class="surface-strong p-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ reminder.remind_at|time:'H:i' }}</strong>
+                        {% if reminder.label %}<span class="ms-2 muted-text">{{ reminder.label }}</span>{% endif %}
+                    </div>
+                    <form method="POST" action="{% url 'delete_habit_reminder' reminder.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </div>
+                {% empty %}
+                <div class="muted-text small">No reminders yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

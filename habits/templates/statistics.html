@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Statistics - Habit Tracker{% endblock %}
+{% block topnav_statistics %}active{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+    <h1 class="display-font mb-4">📊 Your Statistics</h1>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="surface p-4 text-center">
+                <div class="display-font" style="font-size:2rem;color:var(--brand);">{{ stats.total_completed }}</div>
+                <div class="small text-muted">Total Completed</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="surface p-4 text-center">
+                <div class="display-font" style="font-size:2rem;color:#10b981;">{{ stats.current_streak }}</div>
+                <div class="small text-muted">Current Streak</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="surface p-4 text-center">
+                <div class="display-font" style="font-size:2rem;color:#f59e0b;">{{ stats.longest_streak }}</div>
+                <div class="small text-muted">Longest Streak</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="surface p-4 text-center">
+                <div class="display-font" style="font-size:2rem;color:#8b5cf6;">{{ stats.consistency_percentage|floatformat:0 }}%</div>
+                <div class="small text-muted">Consistency</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Stats -->
+    <div class="surface p-4 mb-4">
+        <h3 class="mb-3">This Week</h3>
+        <div class="row">
+            {% for day in weekly_stats %}
+            <div class="col-md-1 col-sm-2 text-center mb-3">
+                <div class="fw-bold small">{{ day.day_name }}</div>
+                <div style="font-size:2rem;">
+                    {% if day.total %}
+                        {% if day.completed == day.total %}✅{% else %}⚠️{% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div class="small text-muted">{{ day.completed }}/{{ day.total }}</div>
+                <div class="small text-muted">{{ day.completion_rate|floatformat:0 }}%</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Category Stats -->
+    {% if category_stats %}
+    <div class="surface p-4 mb-4">
+        <h3 class="mb-3">By Category</h3>
+        <div class="row">
+            {% for cat in category_stats %}
+            <div class="col-md-6 mb-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ cat.category }}</span>
+                    <span class="fw-bold">{{ cat.completion_rate|floatformat:0 }}%</span>
+                </div>
+                <div class="progress" style="height:8px;">
+                    <div class="progress-bar" role="progressbar" style="width:{{ cat.completion_rate }}%;" 
+                         aria-valuenow="{{ cat.completion_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="small text-muted mt-1">{{ cat.completed }}/{{ cat.total }} • {{ cat.habit_count }} habit{{ cat.habit_count|pluralize }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Chart -->
+    {% if chart_data %}
+    <div class="surface p-4">
+        <h3 class="mb-3">Monthly Completions</h3>
+        <canvas id="statsChart"></canvas>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const chartData = {{ chart_data|safe }};
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        const datasets = chartData.datasets.map((dataset, index) => ({
+            label: dataset.label,
+            data: dataset.data,
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length] + '20',
+            tension: 0.4,
+            fill: true,
+        }));
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: datasets,
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' },
+                },
+                scales: {
+                    y: { beginAtZero: true },
+                },
+            },
+        });
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
