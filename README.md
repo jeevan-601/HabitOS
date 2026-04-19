@@ -1,4 +1,4 @@
-# Habit AI - Django Habit Tracker
+# HabitOS - Django Habit Tracker
 
 Habit AI is a Django-based habit tracking app with social features, challenges, leaderboard rankings, reminders, and analytics.
 
