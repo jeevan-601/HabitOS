@@ -93,6 +93,38 @@ Repository URL:
 
 - https://github.com/Flame-Phoneix/habit_ai
 
+### Host with GitHub (Important)
+
+GitHub is used to host your source code and trigger deployments.
+For a Django app, GitHub Pages is not suitable because it only serves static files.
+
+Recommended setup:
+
+1. Push this project to GitHub.
+2. Connect the GitHub repository to Render (or another Python host).
+3. Deploy from the GitHub branch (for example, `main`).
+
+### Push this project to GitHub
+
+If your local folder is not already connected to a GitHub remote:
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/<your-username>/habit_ai.git
+git push -u origin main
+```
+
+If your project is already connected:
+
+```bash
+git add .
+git commit -m "Update project"
+git push
+```
+
 ## Deployment Notes
 
 Before production deployment:
