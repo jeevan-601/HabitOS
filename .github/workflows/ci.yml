@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm install --no-audit --progress=false
+
+      - name: Run frontend tests
+        run: npm run test:run
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm install --no-audit --progress=false
+
+      - name: Backend syntax check
+        working-directory: server
+        run: node -c src/index.js && node -c src/db.js && node -c src/routes/auth.js && node -c src/routes/habits.js && node -c src/routes/sessions.js && node -c src/routes/gamification.js && node -c src/routes/notifications.js && node -c src/middleware/auth.js
