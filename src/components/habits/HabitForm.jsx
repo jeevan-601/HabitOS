@@ -1,6 +1,6 @@
 import React, {useState} from 'react'
 
-const colorSwatches = ['#7C3AED','#06B6D4','#22C55E','#F59E0B','#F43F5E','#A855F7','#14B8A6','#3B82F6','#84CC16','#FB7185','#F97316','#94A3B8']
+const colorSwatches = ['#06B6D4','#14B8A6','#3B82F6','#84CC16','#F97316','#FB7185','#F59E0B','#F43F5E','#94A3B8','#A855F7','#22C55E']
 
 export default function HabitForm({onAdd=(()=>{})}){
   const [name,setName] = useState('')

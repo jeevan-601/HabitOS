@@ -9,7 +9,7 @@ describe('HabitList', () => {
     const onDelete = vi.fn()
     render(
       <HabitList
-        habits={[{ id: 1, name: 'Meditate', description: 'Morning session', completed: false, icon: '🧘', color: '#7C3AED', meta: { category: 'Mindfulness', frequency: 'daily' } }]}
+        habits={[{ id: 1, name: 'Meditate', description: 'Morning session', completed: false, icon: '🧘', color: '#06B6D4', meta: { category: 'Mindfulness', frequency: 'daily' } }]}
         onToggle={onToggle}
         onDelete={onDelete}
       />

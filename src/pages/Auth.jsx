@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useStore } from '../store/useStore'
+import { useNavigate } from 'react-router-dom'
 
 export default function Auth(){
   const login = useStore(s => s.login)
@@ -10,6 +11,7 @@ export default function Auth(){
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const submit = async (e) => {
     e.preventDefault()
@@ -19,8 +21,10 @@ export default function Auth(){
       const payload = { email, password, name }
       if(mode === 'login') await login(payload)
       else await register(payload)
+      // ensure navigation to app root after successful auth
+      navigate('/', { replace: true })
     }catch(err){
-      setError(err.message || 'Auth failed')
+      setError(err?.message || JSON.stringify(err) || 'Auth failed')
     }finally{
       setLoading(false)
     }

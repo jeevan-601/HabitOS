@@ -10,7 +10,7 @@ function ProgressRing({percent=0}){
     <svg width="120" height="120">
       <g transform="translate(60,60)">
         <circle r={radius} stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} fill="transparent" />
-        <circle r={radius} stroke="#7C3AED" strokeWidth={stroke} fill="transparent" strokeDasharray={`${(percent/100)*c} ${c}`} strokeLinecap="round" transform="rotate(-90)" />
+        <circle r={radius} stroke="var(--accent-strong)" strokeWidth={stroke} fill="transparent" strokeDasharray={`${(percent/100)*c} ${c}`} strokeLinecap="round" transform="rotate(-90)" />
         <text x="0" y="6" textAnchor="middle" fontSize="18" fill="white">{Math.round(percent)}%</text>
       </g>
     </svg>

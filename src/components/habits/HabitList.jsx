@@ -5,7 +5,7 @@ export default function HabitList({habits=[], onToggle=(()=>{}), onDelete=(()=>{
   return (
     <div className="space-y-2">
       {habits.map(h=> (
-        <div key={h.id} className="card p-3 flex items-center justify-between gap-3" style={{borderLeft: `4px solid ${h.color || '#7C3AED'}`}}>
+        <div key={h.id} className="card p-3 flex items-center justify-between gap-3" style={{borderLeft: `4px solid ${h.color || 'var(--accent-strong)'}`}}>
           <div>
             <div className="font-medium flex items-center gap-2">
               <span>{h.icon || '✨'}</span>

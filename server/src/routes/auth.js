@@ -3,20 +3,22 @@ const router = express.Router()
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const { pool } = require('../db')
+const { JWT_SECRET } = require('../config')
 
 function signAccessToken(user){
-  return jwt.sign({id:user.id,email:user.email}, process.env.JWT_SECRET, { expiresIn: '15m' })
+  return jwt.sign({id:user.id,email:user.email}, JWT_SECRET, { expiresIn: '15m' })
 }
 
 function signRefreshToken(user){
-  return jwt.sign({id:user.id,email:user.email,type:'refresh'}, process.env.JWT_SECRET, { expiresIn: '30d' })
+  return jwt.sign({id:user.id,email:user.email,type:'refresh'}, JWT_SECRET, { expiresIn: '30d' })
 }
 
 async function persistRefreshToken(userId, token){
   const tokenHash = await bcrypt.hash(token, 8)
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
   await pool.query(
-    'INSERT INTO refresh_tokens(user_id, token_hash, expires_at) VALUES($1,$2, now() + interval \'30 days\')',
-    [userId, tokenHash]
+    'INSERT INTO refresh_tokens(user_id, token_hash, expires_at) VALUES($1,$2,$3)',
+    [userId, tokenHash, expiresAt]
   )
 }
 
@@ -55,7 +57,7 @@ router.post('/refresh', async (req,res)=>{
   const { refreshToken } = req.body
   if(!refreshToken) return res.status(400).json({error:'missing'})
   try{
-    const payload = jwt.verify(refreshToken, process.env.JWT_SECRET)
+    const payload = jwt.verify(refreshToken, JWT_SECRET)
     if(payload.type !== 'refresh') return res.status(400).json({error:'invalid'})
     const r = await pool.query('SELECT id,email,name FROM users WHERE id=$1', [payload.id])
     const user = r.rows[0]
@@ -75,7 +77,7 @@ router.post('/logout', async (req,res)=>{
   const { refreshToken } = req.body
   if(!refreshToken) return res.json({ok:true})
   try{
-    const payload = jwt.verify(refreshToken, process.env.JWT_SECRET)
+    const payload = jwt.verify(refreshToken, JWT_SECRET)
     await pool.query('UPDATE refresh_tokens SET revoked_at = now() WHERE user_id=$1 AND revoked_at IS NULL', [payload.id])
   }catch(e){}
   res.json({ok:true})

@@ -52,11 +52,16 @@ router.get('/', auth, async (req, res) => {
   const badges = []
 
   if(habits.length >= 1) badges.push({ id: 'first-habit', name: 'First Habit', unlocked: true })
+  if(habits.length >= 5) badges.push({ id: 'habit-builder', name: 'Habit Builder', unlocked: true })
+  if(habits.length >= 10) badges.push({ id: 'habit-collector', name: 'Habit Collector', unlocked: true })
   if(currentStreak >= 7) badges.push({ id: 'streak-7', name: '7 Day Streak', unlocked: true })
   if(currentStreak >= 30) badges.push({ id: 'streak-30', name: '30 Day Streak', unlocked: true })
   if(habitCompletions >= 100) badges.push({ id: 'centurion', name: 'Centurion', unlocked: true })
+  if(habitCompletions >= 365) badges.push({ id: 'yearly', name: 'Yearly Momentum', unlocked: true })
   if(totalFocusMinutes >= 600) badges.push({ id: 'focus-master', name: 'Focus Master', unlocked: true })
+  if(totalFocusMinutes >= 1200) badges.push({ id: 'deep-work', name: 'Deep Work', unlocked: true })
   if(habits.filter(h => h.meta?.category === 'Health').length >= 3) badges.push({ id: 'health-runner', name: 'Health Runner', unlocked: true })
+  if(habits.filter(h => h.meta?.category === 'Work').length >= 3) badges.push({ id: 'work-streak', name: 'Work Streak', unlocked: true })
 
   res.json({
     xp: totalXp,
@@ -66,6 +71,7 @@ router.get('/', auth, async (req, res) => {
     habitCompletions,
     totalFocusMinutes,
     badges,
+    badgeCount: badges.length,
     levelName: level >= 50 ? 'Legend' : level >= 25 ? 'Master' : level >= 10 ? 'Adept' : 'Novice'
   })
 })

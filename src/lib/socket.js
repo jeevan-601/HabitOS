@@ -6,7 +6,12 @@ let socket
 export function getSocket(){
   if(socket) return socket
   const { accessToken } = getTokens()
-  socket = io(API_BASE, { transports: ['websocket'], query: { token: accessToken } })
+  const origin = API_BASE || (typeof window !== 'undefined' ? window.location.origin : '')
+  socket = io(origin, {
+    transports: ['websocket'],
+    path: '/socket.io',
+    query: { token: accessToken }
+  })
   return socket
 }
 
