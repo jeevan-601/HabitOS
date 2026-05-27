@@ -10,29 +10,38 @@ export default function DashboardPage({ habits, tasks, setPage, user, profile })
   const displayName = user?.name || 'there';
   const xp = calculateXp(habits, tasks);
   const focusHours = formatFocusHours(profile?.focusMinutes ?? 0);
+  const focusDurationSeconds = profile?.focusDurationSeconds ?? ((profile?.focusDuration ?? 25) * 60);
+
+  // FIX: compute real max streak from actual habits, don't hardcode "14"
+  const maxStreak = habits.reduce((max, h) => Math.max(max, h.streak ?? 0), 0);
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
     <div className="app-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <SectionTitle
-        title={`Good morning, ${displayName}`}
+        title={`${greeting}, ${displayName}`}
         subtitle="Your habits, focus, and tasks are all in one place."
         action={(
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <Tag color={TOKENS.warn}>🔥 14 streak</Tag>
+            {/* FIX: only show streak tag if there is actually a streak */}
+            {maxStreak > 0 && <Tag color={TOKENS.warn}>🔥 {maxStreak} streak</Tag>}
             <Avatar name={displayName} size={40} />
           </div>
         )}
       />
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard label="Focus Hours" value={focusHours} color={TOKENS.accent} sub="All-time pomodoro time" />
+        <StatCard label="Focus Hours" value={focusHours} color={TOKENS.accent} sub="All-time focus session time" />
         <StatCard label="Habits Done" value={habitSummary} color={TOKENS.success} sub={habits.length ? 'Daily completion' : 'Add your first habit'} />
         <StatCard label="Tasks" value={taskSummary} color={TOKENS.warn} sub={tasks.length ? 'Tasks finished' : 'Add your first task'} />
         <StatCard
           label="XP Today"
-          value={`+${xp.total}`}
+          // FIX: show 0 XP for new accounts with no completed habits/tasks
+          value={xp.total > 0 ? `+${xp.total}` : '0'}
           color={TOKENS.energy}
-          sub={`Level ${xp.level} · ${Math.round(xp.percentToNextLevel)}% to next`}
+          sub={xp.total > 0 ? `Level ${xp.level} · ${Math.round(xp.percentToNextLevel)}% to next` : 'Complete habits to earn XP'}
         />
       </div>
 
@@ -44,7 +53,9 @@ export default function DashboardPage({ habits, tasks, setPage, user, profile })
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {habits.length === 0 ? <div style={{ color: TOKENS.muted, fontSize: 13, lineHeight: 1.6 }}>No habits yet. Add one to start tracking your streaks.</div> : null}
+            {habits.length === 0 ? (
+              <div style={{ color: TOKENS.muted, fontSize: 13, lineHeight: 1.6 }}>No habits yet. Add one to start tracking your streaks.</div>
+            ) : null}
             {habits.slice(0, 4).map((habit) => {
               const completed = habit.done === true || (typeof habit.done === 'number' && habit.done >= habit.target);
               const progress = habit.done === true ? habit.target : habit.done || 0;
@@ -70,11 +81,13 @@ export default function DashboardPage({ habits, tasks, setPage, user, profile })
           </div>
 
           <div style={{ textAlign: 'center', padding: '8px 0 6px' }}>
-            <div style={{ fontSize: 56, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: TOKENS.accent, letterSpacing: '-0.05em' }}>25:00</div>
-            <div style={{ marginTop: 6, fontSize: 12, color: TOKENS.muted }}>Pomodoro · Deep Work</div>
+            <div style={{ fontSize: 56, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: TOKENS.accent, letterSpacing: '-0.05em' }}>
+              {formatClock(focusDurationSeconds)}
+            </div>
+            <div style={{ marginTop: 6, fontSize: 12, color: TOKENS.muted }}>Focus Session · Deep Work</div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
               {[1, 2, 3, 4].map((index) => (
-                <div key={index} style={{ width: 8, height: 8, borderRadius: '50%', background: index <= 2 ? TOKENS.accent : TOKENS.card2 }} />
+                <div key={index} style={{ width: 8, height: 8, borderRadius: '50%', background: TOKENS.card2 }} />
               ))}
             </div>
           </div>
@@ -86,16 +99,27 @@ export default function DashboardPage({ habits, tasks, setPage, user, profile })
           <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16 }}>Focus Hours</div>
           <Tag color={TOKENS.accent}>This week</Tag>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, minHeight: 128 }}>
-          {[2.5, 4.1, 1.8, 5.0, 3.2, 4.5, 3.2].map((value, index) => (
-            <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
-              <div style={{ fontSize: 10, color: TOKENS.muted }}>{value}h</div>
-              <div style={{ width: '100%', height: `${(value / 5) * 84}px`, borderRadius: '10px 10px 4px 4px', background: index === 6 ? `linear-gradient(180deg, ${TOKENS.accent}, ${TOKENS.accentHover})` : `${TOKENS.accent}55` }} />
-              <div style={{ fontSize: 10, color: TOKENS.muted }}>{DAYS[index]}</div>
-            </div>
-          ))}
-        </div>
+        {(profile?.focusMinutes ?? 0) === 0 ? (
+          <div style={{ color: TOKENS.muted, fontSize: 13, padding: '8px 0' }}>No focus sessions yet. Start a Focus Session to log time here.</div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, minHeight: 128 }}>
+            {[2.5, 4.1, 1.8, 5.0, 3.2, 4.5, 3.2].map((value, index) => (
+              <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+                <div style={{ fontSize: 10, color: TOKENS.muted }}>{value}h</div>
+                <div style={{ width: '100%', height: `${(value / 5) * 84}px`, borderRadius: '10px 10px 4px 4px', background: index === 6 ? `linear-gradient(180deg, ${TOKENS.accent}, ${TOKENS.accentHover})` : `${TOKENS.accent}55` }} />
+                <div style={{ fontSize: 10, color: TOKENS.muted }}>{DAYS[index]}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
+}
+
+function formatClock(totalSeconds) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
