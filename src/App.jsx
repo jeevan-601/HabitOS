@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './auth/AuthContext';
-import { initialHabits, initialTasks } from './data/appData';
+import { defaultProfile, initialHabits, initialTasks } from './data/appData';
 import { readJSON, writeJSON } from './hooks/usePersistentState';
 import { AppShell } from './components/Shell';
 import LoginPage from './pages/LoginPage';
@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage';
 const storageKey = (email, name) => `habitos.${email}.${name}`;
 const getIsMobile = () => (typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 const VALID_PAGES = new Set(['dashboard', 'focus', 'habits', 'tasks', 'insights', 'social', 'achievements', 'settings']);
+const INITIAL_PROFILE_KEY = 'profile';
 
 const pageFromHash = () => {
   if (typeof window === 'undefined') return 'dashboard';
@@ -32,6 +33,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(getIsMobile());
   const [habits, setHabits] = useState(initialHabits);
   const [tasks, setTasks] = useState(initialTasks);
+  const [profile, setProfile] = useState(null);
   const hydratedRef = useRef(false);
 
   useEffect(() => {
@@ -56,14 +58,28 @@ export default function App() {
   useEffect(() => {
     if (!user) {
       hydratedRef.current = false;
+      setProfile(null);
       return;
     }
 
+    const profileKey = storageKey(user.email, INITIAL_PROFILE_KEY);
+    const storedProfile = readJSON(profileKey, null);
+    const nextProfile = { ...defaultProfile(user), ...(storedProfile || {}) };
+    const hasProfile = Boolean(storedProfile);
+    const defaultHabits = nextProfile.isDemo ? initialHabits : [];
+    const defaultTasks = nextProfile.isDemo ? initialTasks : [];
+
     hydratedRef.current = false;
-    setHabits(readJSON(storageKey(user.email, 'habits'), initialHabits));
-    setTasks(readJSON(storageKey(user.email, 'tasks'), initialTasks));
+    setHabits(hasProfile ? readJSON(storageKey(user.email, 'habits'), defaultHabits) : defaultHabits);
+    setTasks(hasProfile ? readJSON(storageKey(user.email, 'tasks'), defaultTasks) : defaultTasks);
     setActivePage(pageFromHash() || readJSON(storageKey(user.email, 'page'), 'dashboard'));
     setSidebarCollapsed(readJSON(storageKey(user.email, 'collapsed'), false));
+    setProfile(nextProfile);
+    if (!hasProfile) {
+      writeJSON(profileKey, nextProfile);
+      writeJSON(storageKey(user.email, 'habits'), defaultHabits);
+      writeJSON(storageKey(user.email, 'tasks'), defaultTasks);
+    }
     hydratedRef.current = true;
   }, [user]);
 
@@ -74,6 +90,11 @@ export default function App() {
     writeJSON(storageKey(user.email, 'page'), activePage);
     writeJSON(storageKey(user.email, 'collapsed'), sidebarCollapsed);
   }, [activePage, habits, sidebarCollapsed, tasks, user]);
+
+  useEffect(() => {
+    if (!user || !hydratedRef.current || !profile) return;
+    writeJSON(storageKey(user.email, INITIAL_PROFILE_KEY), profile);
+  }, [profile, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -91,7 +112,16 @@ export default function App() {
     return <LoginPage onLogin={login} onSignup={signup} />;
   }
 
-  const pageProps = { habits, setHabits, tasks, setTasks, setPage: setActivePage };
+  const pageProps = {
+    habits,
+    setHabits,
+    tasks,
+    setTasks,
+    setPage: setActivePage,
+    user,
+    profile,
+    setProfile,
+  };
 
   return (
     <AppShell
@@ -107,10 +137,10 @@ export default function App() {
       {activePage === 'focus' ? <FocusPage {...pageProps} /> : null}
       {activePage === 'habits' ? <HabitsPage {...pageProps} /> : null}
       {activePage === 'tasks' ? <TasksPage {...pageProps} /> : null}
-      {activePage === 'insights' ? <InsightsPage /> : null}
+      {activePage === 'insights' ? <InsightsPage habits={habits} tasks={tasks} user={user} profile={profile} /> : null}
       {activePage === 'social' ? <SocialPage /> : null}
       {activePage === 'achievements' ? <AchievementsPage /> : null}
-      {activePage === 'settings' ? <SettingsPage /> : null}
+      {activePage === 'settings' ? <SettingsPage user={user} profile={profile} setProfile={setProfile} /> : null}
     </AppShell>
   );
 }

@@ -1,35 +1,39 @@
 import { DAYS, TOKENS } from '../data/appData';
 import { Avatar, Button, Card, ProgressBar, SectionTitle, StatCard, Tag } from '../components/ui';
+import { calculateXp, countDoneHabits, countDoneTasks, formatFocusHours } from '../lib/accountMetrics';
 
-const dashboardTips = [
-  { icon: '⏰', msg: 'Your peak focus is 9–11am. You are usually more productive in that window.', color: TOKENS.accent },
-  { icon: '💧', msg: 'Hydration drops mid-week. Add a reminder after lunch?', color: TOKENS.warn },
-  { icon: '🔥', msg: 'You are close to your longest streak ever. Keep the chain alive.', color: TOKENS.energy },
-];
-
-export default function DashboardPage({ habits, tasks, setPage }) {
-  const doneTasks = tasks.filter((task) => task.done).length;
-  const doneHabits = habits.filter((habit) => habit.done === true || (typeof habit.done === 'number' && habit.done >= habit.target)).length;
-  const focusToday = 3.2;
+export default function DashboardPage({ habits, tasks, setPage, user, profile }) {
+  const doneTasks = countDoneTasks(tasks);
+  const doneHabits = countDoneHabits(habits);
+  const habitSummary = habits.length ? `${doneHabits}/${habits.length}` : 'No habits yet';
+  const taskSummary = tasks.length ? `${doneTasks}/${tasks.length}` : 'No tasks yet';
+  const displayName = user?.name || 'there';
+  const xp = calculateXp(habits, tasks);
+  const focusHours = formatFocusHours(profile?.focusMinutes ?? 0);
 
   return (
     <div className="app-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <SectionTitle
-        title="Good morning, Alex"
+        title={`Good morning, ${displayName}`}
         subtitle="Your habits, focus, and tasks are all in one place."
         action={(
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <Tag color={TOKENS.warn}>🔥 14 streak</Tag>
-            <Avatar name="Alex Kumar" size={40} />
+            <Avatar name={displayName} size={40} />
           </div>
         )}
       />
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard label="Focus Today" value={`${focusToday}h`} color={TOKENS.accent} sub="+0.4h vs average" />
-        <StatCard label="Habits Done" value={`${doneHabits}/${habits.length}`} color={TOKENS.success} sub="Daily completion" />
-        <StatCard label="Tasks" value={`${doneTasks}/${tasks.length}`} color={TOKENS.warn} sub="Tasks finished" />
-        <StatCard label="XP Today" value="+240" color={TOKENS.energy} sub="Level 8 · 81%" />
+        <StatCard label="Focus Hours" value={focusHours} color={TOKENS.accent} sub="All-time pomodoro time" />
+        <StatCard label="Habits Done" value={habitSummary} color={TOKENS.success} sub={habits.length ? 'Daily completion' : 'Add your first habit'} />
+        <StatCard label="Tasks" value={taskSummary} color={TOKENS.warn} sub={tasks.length ? 'Tasks finished' : 'Add your first task'} />
+        <StatCard
+          label="XP Today"
+          value={`+${xp.total}`}
+          color={TOKENS.energy}
+          sub={`Level ${xp.level} · ${Math.round(xp.percentToNextLevel)}% to next`}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 16 }}>
@@ -40,6 +44,7 @@ export default function DashboardPage({ habits, tasks, setPage }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {habits.length === 0 ? <div style={{ color: TOKENS.muted, fontSize: 13, lineHeight: 1.6 }}>No habits yet. Add one to start tracking your streaks.</div> : null}
             {habits.slice(0, 4).map((habit) => {
               const completed = habit.done === true || (typeof habit.done === 'number' && habit.done >= habit.target);
               const progress = habit.done === true ? habit.target : habit.done || 0;
@@ -78,21 +83,9 @@ export default function DashboardPage({ habits, tasks, setPage }) {
 
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16 }}>AI Insight</div>
-          <Tag color={TOKENS.success}>AI Coach</Tag>
+          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16 }}>Focus Hours</div>
+          <Tag color={TOKENS.accent}>This week</Tag>
         </div>
-        <div style={{ display: 'grid', gap: 10 }}>
-          {dashboardTips.map((tip) => (
-            <div key={tip.msg} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: `${tip.color}0f`, borderRadius: 14, border: `1px solid ${tip.color}22` }}>
-              <span style={{ fontSize: 18 }}>{tip.icon}</span>
-              <div style={{ fontSize: 13, lineHeight: 1.6 }}>{tip.msg}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Weekly Focus</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, minHeight: 128 }}>
           {[2.5, 4.1, 1.8, 5.0, 3.2, 4.5, 3.2].map((value, index) => (
             <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>

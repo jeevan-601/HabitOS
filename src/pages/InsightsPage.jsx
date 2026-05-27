@@ -1,20 +1,26 @@
 import { DAYS, MONTHS, TOKENS } from '../data/appData';
 import { Card, ProgressBar, SectionTitle, StatCard, Tag } from '../components/ui';
+import { calculateXp, countDoneHabits, countDoneTasks, formatFocusHours } from '../lib/accountMetrics';
 
-export default function InsightsPage() {
+export default function InsightsPage({ habits = [], tasks = [], user, profile }) {
   const weekData = [2.5, 4.1, 1.8, 5.0, 3.2, 4.5, 3.2];
   const habitData = [85, 92, 71, 100, 88, 95, 76];
   const maxWeek = Math.max(...weekData);
+  const xp = calculateXp(habits, tasks);
+  const doneHabits = countDoneHabits(habits);
+  const doneTasks = countDoneTasks(tasks);
+  const habitRate = habits.length ? Math.round((doneHabits / habits.length) * 100) : 0;
+  const taskRate = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
 
   return (
     <div className="app-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <SectionTitle title="Analytics & Insights" subtitle="Spot patterns and keep improving." />
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard label="This Week" value="24.3h" color={TOKENS.accent} sub="+3.2h vs last week" />
-        <StatCard label="Habit Rate" value="91%" color={TOKENS.success} sub="Best ever: 97%" />
-        <StatCard label="Sessions" value="47" color={TOKENS.warn} sub="Avg 6.7/day" />
-        <StatCard label="XP Earned" value="1,840" color={TOKENS.energy} sub="This week" />
+        <StatCard label="Focus Hours" value={formatFocusHours(profile?.focusMinutes ?? 0)} color={TOKENS.accent} sub="All-time pomodoro time" />
+        <StatCard label="Habit Rate" value={`${habitRate}%`} color={TOKENS.success} sub={habits.length ? 'Based on current account' : 'No habits yet'} />
+        <StatCard label="Task Rate" value={`${taskRate}%`} color={TOKENS.warn} sub={tasks.length ? 'Based on current account' : 'No tasks yet'} />
+        <StatCard label="XP Earned" value={xp.total.toLocaleString()} color={TOKENS.energy} sub={`Level ${xp.level} · ${xp.progressToNextLevel} to next`} />
       </div>
 
       <Card>
@@ -64,20 +70,16 @@ export default function InsightsPage() {
         </Card>
 
         <Card>
-          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 14 }}>AI Coach Insights</div>
-          <div style={{ display: 'grid', gap: 10 }}>
-            {[
-              { title: 'Peak Hours', value: '9am–11am', icon: '⏰', color: TOKENS.accent },
-              { title: 'Best Day', value: 'Thursday', icon: '📅', color: TOKENS.success },
-              { title: 'Streak Risk', value: 'Low', icon: '🔥', color: TOKENS.warn },
-              { title: 'Focus Quality', value: 'Excellent', icon: '⭐', color: TOKENS.energy },
-            ].map((item) => (
-              <div key={item.title} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: TOKENS.card2, borderRadius: 14 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-                  <span>{item.icon}</span>
-                  {item.title}
-                </div>
-                <Tag color={item.color}>{item.value}</Tag>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16 }}>Focus Hours</div>
+            <Tag color={TOKENS.accent}>This week</Tag>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, minHeight: 128 }}>
+            {weekData.map((value, index) => (
+              <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 10, color: TOKENS.muted }}>{value}h</div>
+                <div style={{ width: '100%', height: `${(value / maxWeek) * 92}px`, background: index === 6 ? TOKENS.accent : `${TOKENS.accent}44`, borderRadius: '10px 10px 4px 4px' }} />
+                <div style={{ fontSize: 10, color: TOKENS.muted }}>{DAYS[index]}</div>
               </div>
             ))}
           </div>

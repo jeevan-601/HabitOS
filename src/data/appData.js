@@ -36,6 +36,8 @@ export const demoUsers = [
     email: 'alex@habitos.app',
     password: 'demo1234',
     color: TOKENS.accent,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    isDemo: true,
   },
 ];
 
@@ -77,3 +79,11 @@ export const badges = [
   { icon: '⚡', name: 'Speed Runner', desc: '10h in one day', earned: false, color: TOKENS.accent },
   { icon: '🌍', name: 'Global Legend', desc: 'Rank #1 worldwide', earned: false, color: TOKENS.energy },
 ];
+
+export const defaultProfile = (user) => ({
+  createdAt: user?.createdAt ?? new Date().toISOString(),
+  isDemo: Boolean(user?.isDemo),
+  focusMinutes: 0,
+  focusDuration: 25,
+  breakDuration: 5,
+});

@@ -46,6 +46,8 @@ export function AuthProvider({ children }) {
       name: match.name,
       email: match.email,
       color: match.color,
+        createdAt: match.createdAt,
+        isDemo: Boolean(match.isDemo),
     };
 
     setUser(nextUser);
@@ -83,6 +85,8 @@ export function AuthProvider({ children }) {
       email: normalized,
       password,
       color: '#5d7dff',
+      createdAt: new Date().toISOString(),
+      isDemo: false,
     };
 
     const nextUsers = [...users, nextUserRecord];
@@ -93,6 +97,8 @@ export function AuthProvider({ children }) {
       name: nextUserRecord.name,
       email: nextUserRecord.email,
       color: nextUserRecord.color,
+      createdAt: nextUserRecord.createdAt,
+      isDemo: false,
     };
 
     setUser(sessionUser);

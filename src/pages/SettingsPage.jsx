@@ -2,10 +2,22 @@ import { useState } from 'react';
 import { TOKENS } from '../data/appData';
 import { Avatar, Button, Card, SectionTitle, Tag } from '../components/ui';
 
-export default function SettingsPage() {
+export default function SettingsPage({ user, profile, setProfile }) {
   const [prefs, setPrefs] = useState({ notifications: true, sounds: true, aiCoach: true, weeklyReport: true, darkMode: true, focusDuration: 25, breakDuration: 5 });
+  const joinDate = user?.createdAt ? new Date(user.createdAt) : null;
+  const joinLabel = joinDate ? joinDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown';
+  const focusDuration = profile?.focusDuration ?? 25;
+  const breakDuration = profile?.breakDuration ?? 5;
 
   const toggle = (key) => setPrefs((current) => ({ ...current, [key]: !current[key] }));
+
+  const updateTimerSetting = (key, value) => {
+    if (!setProfile) return;
+    setProfile((current) => ({
+      ...(current ?? {}),
+      [key]: value,
+    }));
+  };
 
   return (
     <div className="app-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -13,11 +25,14 @@ export default function SettingsPage() {
 
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>
-          <Avatar name="Alex Kumar" size={56} />
+          <Avatar name={user?.name ?? 'Alex Kumar'} size={56} />
           <div>
-            <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 18 }}>Alex Kumar</div>
-            <div style={{ color: TOKENS.muted, fontSize: 13 }}>alex@example.com</div>
-            <div style={{ marginTop: 7 }}><Tag color={TOKENS.warn}>Legend · Level 8</Tag></div>
+            <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 18 }}>{user?.name ?? 'Alex Kumar'}</div>
+            <div style={{ color: TOKENS.muted, fontSize: 13 }}>{user?.email ?? 'alex@example.com'}</div>
+            <div style={{ marginTop: 7, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Tag color={TOKENS.warn}>Legend · Level 8</Tag>
+              <Tag color={TOKENS.accent}>Joined {joinLabel}</Tag>
+            </div>
           </div>
         </div>
         <Button variant="outline" size="sm">Edit profile</Button>
@@ -45,9 +60,16 @@ export default function SettingsPage() {
           <div key={key} style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 8 }}>
               <span>{label}</span>
-              <span style={{ color: TOKENS.accent, fontWeight: 700 }}>{prefs[key]} {unit}</span>
+              <span style={{ color: TOKENS.accent, fontWeight: 700 }}>{key === 'focusDuration' ? focusDuration : breakDuration} {unit}</span>
             </div>
-            <input type="range" min={min} max={max} value={prefs[key]} onChange={(event) => setPrefs((current) => ({ ...current, [key]: Number(event.target.value) }))} style={{ width: '100%', accentColor: TOKENS.accent }} />
+            <input
+              type="range"
+              min={min}
+              max={max}
+              value={key === 'focusDuration' ? focusDuration : breakDuration}
+              onChange={(event) => updateTimerSetting(key, Number(event.target.value))}
+              style={{ width: '100%', accentColor: TOKENS.accent }}
+            />
           </div>
         ))}
       </Card>

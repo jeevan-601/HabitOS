@@ -3,27 +3,48 @@ import { TOKENS } from '../data/appData';
 import { Button, Card, ProgressBar, SectionTitle, Tag } from '../components/ui';
 
 const MODES = [
-  { label: 'Focus', duration: 25 * 60, color: TOKENS.accent },
+  { label: 'Pomodoro', duration: 'focus', color: TOKENS.accent },
   { label: 'Short Break', duration: 5 * 60, color: TOKENS.success },
   { label: 'Long Break', duration: 15 * 60, color: TOKENS.warn },
 ];
 
 const fmt = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 
-export default function FocusPage({ tasks }) {
+export default function FocusPage({ tasks, profile, setProfile }) {
   const [modeIndex, setModeIndex] = useState(0);
-  const [seconds, setSeconds] = useState(MODES[0].duration);
+  const focusDuration = profile?.focusDuration ?? 25;
+  const breakDuration = profile?.breakDuration ?? 5;
+  const getModeDuration = (index) => {
+    if (index === 0) return focusDuration * 60;
+    if (index === 1) return breakDuration * 60;
+    return breakDuration * 3 * 60;
+  };
+
+  const [seconds, setSeconds] = useState(getModeDuration(0));
   const [running, setRunning] = useState(false);
   const [sessions, setSessions] = useState(2);
   const [selectedTask, setSelectedTask] = useState(tasks.find((task) => !task.done)?.id ?? tasks[0]?.id ?? 0);
   const [soundOn, setSoundOn] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState('rain');
   const timerRef = useRef(null);
+  const audioRef = useRef(null);
 
   const mode = MODES[modeIndex];
-  const totalDuration = mode.duration;
+  const totalDuration = getModeDuration(modeIndex);
   const progress = totalDuration > 0 ? 1 - seconds / totalDuration : 0;
   const radius = 100;
   const circumference = useMemo(() => 2 * Math.PI * radius, []);
+
+  const recordFocusTime = (minutes) => {
+    if (!setProfile) return;
+    setProfile((current) => {
+      const safeCurrent = current ?? {};
+      return {
+        ...safeCurrent,
+        focusMinutes: Number(safeCurrent.focusMinutes ?? 0) + minutes,
+      };
+    });
+  };
 
   useEffect(() => {
     if (!running) {
@@ -36,7 +57,10 @@ export default function FocusPage({ tasks }) {
         if (current <= 1) {
           window.clearInterval(timerRef.current);
           setRunning(false);
-          setSessions((value) => value + 1);
+          if (modeIndex === 0) {
+            setSessions((value) => value + 1);
+            recordFocusTime(focusDuration);
+          }
           return totalDuration;
         }
         return current - 1;
@@ -48,14 +72,58 @@ export default function FocusPage({ tasks }) {
 
   const changeMode = (index) => {
     setModeIndex(index);
-    setSeconds(MODES[index].duration);
+    setSeconds(getModeDuration(index));
     setRunning(false);
   };
 
   const reset = () => {
     setRunning(false);
-    setSeconds(mode.duration);
+    setSeconds(getModeDuration(modeIndex));
   };
+
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (next) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  };
+
+  const selectTrack = (trackId) => {
+    setSelectedTrack(trackId);
+    setSoundOn(true);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.load();
+    audio.play().catch(() => {});
+  };
+
+  const tracks = [
+    { id: 'rain', label: 'Rain', src: '/media/rain.mp4', emoji: '🌧', description: 'Soft rain loop' },
+    { id: 'waves', label: 'Waves', src: '/media/waves.mp4', emoji: '🌊', description: 'Ocean ambience' },
+    { id: 'forest', label: 'Forest', src: '/media/forest.mp4', emoji: '🌿', description: 'Nature ambience' },
+    { id: 'cafe', label: 'Cafe', src: '/media/cafe.mp4', emoji: '☕', description: 'Low chatter' },
+    { id: 'custom', label: 'Your MP4', src: '/media/music.mp4', emoji: '🎵', description: 'Drop your file here' },
+  ];
+
+  const activeTrack = tracks.find((track) => track.id === selectedTrack) ?? tracks[0];
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (soundOn) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [soundOn, selectedTrack]);
 
   return (
     <div className="app-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -102,7 +170,7 @@ export default function FocusPage({ tasks }) {
           <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
             <div>
               <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 'clamp(44px, 8vw, 58px)', fontWeight: 700, color: mode.color, letterSpacing: '-0.05em' }}>{fmt(seconds)}</div>
-              <div style={{ marginTop: 4, fontSize: 12, color: TOKENS.muted }}>{mode.label}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: TOKENS.muted }}>{modeIndex === 0 ? `${mode.label} · ${focusDuration} min` : `${mode.label} · ${modeIndex === 1 ? breakDuration : breakDuration * 3} min`}</div>
               <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
                 {[1, 2, 3, 4].map((dot) => (
                   <div key={dot} style={{ width: 7, height: 7, borderRadius: '50%', background: dot <= sessions % 4 ? mode.color : TOKENS.card2 }} />
@@ -117,13 +185,13 @@ export default function FocusPage({ tasks }) {
           <Button onClick={() => setRunning((value) => !value)} size="lg" style={{ width: 72, height: 72, borderRadius: '50%', fontSize: 24 }}>
             {running ? '⏸' : '▶'}
           </Button>
-          <Button variant="ghost" onClick={() => setSoundOn((value) => !value)}>♫</Button>
+          <Button variant="ghost" onClick={toggleSound}>♫</Button>
         </div>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', fontSize: 13, color: TOKENS.muted }}>
           <Tag color={TOKENS.success}>Sessions today: {sessions}</Tag>
           <Tag color={mode.color}>Timer mode: {mode.label}</Tag>
-          <Tag color={soundOn ? TOKENS.accent : TOKENS.muted}>{soundOn ? 'Sound on' : 'Sound off'}</Tag>
+          <Tag color={soundOn ? TOKENS.accent : TOKENS.muted}>{soundOn ? `Playing ${activeTrack.label}` : 'Sound off'}</Tag>
         </div>
       </Card>
 
@@ -168,10 +236,24 @@ export default function FocusPage({ tasks }) {
       <Card>
         <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Ambient sound</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {['🌧 Rain', '🌊 Waves', '🌿 Forest', '☕ Café', '🎵 Lo-fi', '⬜ White noise'].map((item) => (
-            <button key={item} style={soundChipStyle}>{item}</button>
+          {tracks.map((track) => (
+            <button
+              key={track.id}
+              onClick={() => selectTrack(track.id)}
+              style={{
+                ...soundChipStyle,
+                border: `1px solid ${selectedTrack === track.id ? TOKENS.accent : TOKENS.border}`,
+                background: selectedTrack === track.id ? `${TOKENS.accent}18` : TOKENS.card2,
+              }}
+            >
+              {track.emoji} {track.label}
+            </button>
           ))}
         </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: TOKENS.muted, lineHeight: 1.6 }}>
+          Put your MP4 file in <span style={{ color: TOKENS.text }}>public/media/music.mp4</span>. The app will stream it in the focus player.
+        </div>
+        <audio ref={audioRef} src={activeTrack.src} loop preload="auto" />
       </Card>
     </div>
   );
