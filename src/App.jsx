@@ -1,84 +1,127 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Habits = lazy(() => import('./pages/Habits'))
-const Focus = lazy(() => import('./pages/Focus'))
-const Stats = lazy(() => import('./pages/Stats'))
-const Profile = lazy(() => import('./pages/Profile'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-import Auth from './pages/Auth'
-import Sidebar from './components/layout/Sidebar'
-import BottomNav from './components/layout/BottomNav'
-import Header from './components/layout/Header'
-import FAB from './components/layout/FAB'
-import CommandPalette from './components/layout/CommandPalette'
-import { useStore } from './store/useStore'
-import { getTokens } from './lib/api'
-import { trackPageView } from './lib/monitoring'
+import { useEffect, useRef, useState } from 'react';
+import { useAuth } from './auth/AuthContext';
+import { initialHabits, initialTasks } from './data/appData';
+import { readJSON, writeJSON } from './hooks/usePersistentState';
+import { AppShell } from './components/Shell';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import FocusPage from './pages/FocusPage';
+import HabitsPage from './pages/HabitsPage';
+import TasksPage from './pages/TasksPage';
+import InsightsPage from './pages/InsightsPage';
+import SocialPage from './pages/SocialPage';
+import AchievementsPage from './pages/AchievementsPage';
+import SettingsPage from './pages/SettingsPage';
 
-export default function App(){
-  const [paletteOpen, setPaletteOpen] = useState(false)
-  const load = useStore(s => s.load)
-  const attachRealtime = useStore(s => s.attachRealtime)
-  const authReady = useStore(s => s.authReady)
-  const location = useLocation()
+const storageKey = (email, name) => `habitos.${email}.${name}`;
+const getIsMobile = () => (typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+const VALID_PAGES = new Set(['dashboard', 'focus', 'habits', 'tasks', 'insights', 'social', 'achievements', 'settings']);
 
-  useEffect(() => { load() }, [load])
-  useEffect(() => { if(getTokens().accessToken) attachRealtime() }, [attachRealtime])
+const pageFromHash = () => {
+  if (typeof window === 'undefined') return 'dashboard';
+  const raw = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+  return VALID_PAGES.has(raw) ? raw : 'dashboard';
+};
+
+const pageToHash = (page) => `#/${page}`;
+
+export default function App() {
+  const { user, ready, login, signup, logout } = useAuth();
+  const [activePage, setActivePage] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(getIsMobile());
+  const [habits, setHabits] = useState(initialHabits);
+  const [tasks, setTasks] = useState(initialTasks);
+  const hydratedRef = useRef(false);
+
   useEffect(() => {
-    const onKeyDown = (event) => {
-      const isShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k'
-      if(isShortcut){
-        event.preventDefault()
-        setPaletteOpen(true)
+    const handleResize = () => setIsMobile(getIsMobile());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const nextPage = pageFromHash();
+      if (VALID_PAGES.has(nextPage)) {
+        setActivePage(nextPage);
       }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   useEffect(() => {
-    if(getTokens().accessToken) trackPageView(location.pathname)
-  }, [location.pathname])
+    if (!user) {
+      hydratedRef.current = false;
+      return;
+    }
 
-  const signedIn = !!getTokens().accessToken || !!getTokens().refreshToken
+    hydratedRef.current = false;
+    setHabits(readJSON(storageKey(user.email, 'habits'), initialHabits));
+    setTasks(readJSON(storageKey(user.email, 'tasks'), initialTasks));
+    setActivePage(pageFromHash() || readJSON(storageKey(user.email, 'page'), 'dashboard'));
+    setSidebarCollapsed(readJSON(storageKey(user.email, 'collapsed'), false));
+    hydratedRef.current = true;
+  }, [user]);
 
-  if(!authReady){
-    return <div className="min-h-screen grid place-items-center text-muted">Loading…</div>
+  useEffect(() => {
+    if (!user || !hydratedRef.current) return;
+    writeJSON(storageKey(user.email, 'habits'), habits);
+    writeJSON(storageKey(user.email, 'tasks'), tasks);
+    writeJSON(storageKey(user.email, 'page'), activePage);
+    writeJSON(storageKey(user.email, 'collapsed'), sidebarCollapsed);
+  }, [activePage, habits, sidebarCollapsed, tasks, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const hashPage = pageFromHash();
+    if (hashPage !== activePage) {
+      window.history.replaceState(null, '', pageToHash(activePage));
+    }
+  }, [activePage, user]);
+
+  if (!ready) {
+    return <LoadingScreen />;
   }
 
-  if(!signedIn && location.pathname !== '/auth'){
-    return <Navigate to="/auth" replace />
+  if (!user) {
+    return <LoginPage onLogin={login} onSignup={signup} />;
   }
 
-  if(location.pathname === '/auth' && signedIn){
-    return <Navigate to="/" replace />
-  }
-
-  if(location.pathname === '/auth'){
-    return <Auth />
-  }
+  const pageProps = { habits, setHabits, tasks, setTasks, setPage: setActivePage };
 
   return (
-    <div className="min-h-screen flex bg-bg">
-      <a href="#main-content" className="sr-only-focusable">Skip to main content</a>
-      <Sidebar />
-      <main id="main-content" className="flex-1 p-6">
-        <Header onOpenPalette={() => setPaletteOpen(true)} />
-        <Suspense fallback={<div className="card p-6 text-muted">Loading section…</div>}>
-          <Routes>
-            <Route path="/auth" element={<Auth/>} />
-            <Route path="/" element={<Dashboard/>} />
-            <Route path="/habits" element={<Habits/>} />
-            <Route path="/focus" element={<Focus/>} />
-            <Route path="/stats" element={<Stats/>} />
-            <Route path="/notifications" element={<Notifications/>} />
-            <Route path="/profile" element={<Profile/>} />
-          </Routes>
-        </Suspense>
-      </main>
-      <BottomNav />
-      <FAB />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+    <AppShell
+      user={user}
+      activePage={activePage}
+      setActivePage={setActivePage}
+      collapsed={sidebarCollapsed}
+      setCollapsed={setSidebarCollapsed}
+      onLogout={logout}
+      isMobile={isMobile}
+    >
+      {activePage === 'dashboard' ? <DashboardPage {...pageProps} /> : null}
+      {activePage === 'focus' ? <FocusPage {...pageProps} /> : null}
+      {activePage === 'habits' ? <HabitsPage {...pageProps} /> : null}
+      {activePage === 'tasks' ? <TasksPage {...pageProps} /> : null}
+      {activePage === 'insights' ? <InsightsPage /> : null}
+      {activePage === 'social' ? <SocialPage /> : null}
+      {activePage === 'achievements' ? <AchievementsPage /> : null}
+      {activePage === 'settings' ? <SettingsPage /> : null}
+    </AppShell>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--text)', padding: 24 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 16, margin: '0 auto 14px', background: 'linear-gradient(135deg, var(--accent), var(--energy))' }} />
+        <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, fontWeight: 700 }}>Loading HabitOS</div>
+      </div>
     </div>
-  )
+  );
 }

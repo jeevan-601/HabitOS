@@ -1,34 +1,25 @@
-# HabitOS — Frontend Scaffold
+# HabitOS
 
-This repository was reset and scaffolded with a Vite + React + Tailwind frontend.
+HabitOS is a responsive productivity web app for desktop and mobile. It includes local login/signup, habit tracking, focus sessions, tasks, insights, achievements, and settings.
 
-Architecture
-- Frontend: Vite + React + Tailwind at the repo root
-- Backend: Express + Socket.IO in `server/`
-- Data: Postgres via `DATABASE_URL` or local SQLite fallback when env is missing
-- Auth: email/password with JWT access + refresh tokens
-- Realtime: Socket.IO user rooms for device sync
+## Run locally
 
-Quick start:
+```bash
+npm install
+npm run dev
+```
 
-1. Install dependencies: `npm install`
-2. Run dev server: `npm run dev`
+## Build
 
-Backend quick start:
+```bash
+npm run build
+```
 
-1. `cd server`
-2. `cp .env.example .env`
-3. Set `DATABASE_URL` and `JWT_SECRET` for Postgres, or leave them unset for local SQLite/dev mode
-4. `npm install`
-5. `npm run dev`
+## Render deployment
 
-Render deployment:
-- Use `render.yaml` at the repo root.
-- Create a Render Postgres instance and wire its `DATABASE_URL` into the API service.
+Use this repo as a static site on Render.
 
-Features scaffolded:
-- React 18 + Vite
--- Tailwind CSS with teal/cyan accent (`#06B6D4`)
-- Basic pages: Dashboard, Habits, Focus, Stats, Profile
-- Zustand store and localStorage persistence hook
-- Realtime telemetry: request logging, client error tracking, and analytics summary
+- Build command: `npm ci && npm run build`
+- Publish directory: `dist`
+
+The app uses client-side state and localStorage, so no backend is required for the default experience.
