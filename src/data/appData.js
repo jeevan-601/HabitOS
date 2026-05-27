@@ -85,5 +85,6 @@ export const defaultProfile = (user) => ({
   isDemo: Boolean(user?.isDemo),
   focusMinutes: 0,
   focusDuration: 25,
+  focusDurationSeconds: 25 * 60,
   breakDuration: 5,
 });

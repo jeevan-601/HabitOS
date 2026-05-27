@@ -139,8 +139,8 @@ export default function App() {
       {activePage === 'tasks' ? <TasksPage {...pageProps} /> : null}
       {activePage === 'insights' ? <InsightsPage habits={habits} tasks={tasks} user={user} profile={profile} /> : null}
       {activePage === 'social' ? <SocialPage /> : null}
-      {activePage === 'achievements' ? <AchievementsPage /> : null}
-      {activePage === 'settings' ? <SettingsPage user={user} profile={profile} setProfile={setProfile} /> : null}
+      {activePage === 'achievements' ? <AchievementsPage habits={habits} tasks={tasks} profile={profile} /> : null}
+      {activePage === 'settings' ? <SettingsPage user={user} profile={profile} setProfile={setProfile} habits={habits} tasks={tasks} /> : null}
     </AppShell>
   );
 }

@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { TOKENS } from '../data/appData';
 import { Avatar, Button, Card, SectionTitle, Tag } from '../components/ui';
+import { calculateXp } from '../lib/accountMetrics';
 
-export default function SettingsPage({ user, profile, setProfile }) {
+export default function SettingsPage({ user, profile, setProfile, habits = [], tasks = [] }) {
   const [prefs, setPrefs] = useState({ notifications: true, sounds: true, aiCoach: true, weeklyReport: true, darkMode: true, focusDuration: 25, breakDuration: 5 });
   const joinDate = user?.createdAt ? new Date(user.createdAt) : null;
   const joinLabel = joinDate ? joinDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown';
   const focusDuration = profile?.focusDuration ?? 25;
   const breakDuration = profile?.breakDuration ?? 5;
+  // FIX: use real XP instead of hardcoded level 8
+  const xp = calculateXp(habits, tasks);
+  const levelTitle = xp.level >= 20 ? 'Legend' : xp.level >= 10 ? 'Expert' : xp.level >= 5 ? 'Adept' : xp.level >= 2 ? 'Apprentice' : 'Beginner';
 
   const toggle = (key) => setPrefs((current) => ({ ...current, [key]: !current[key] }));
 
@@ -16,6 +20,7 @@ export default function SettingsPage({ user, profile, setProfile }) {
     setProfile((current) => ({
       ...(current ?? {}),
       [key]: value,
+      ...(key === 'focusDuration' ? { focusDurationSeconds: value * 60 } : null),
     }));
   };
 
@@ -30,7 +35,7 @@ export default function SettingsPage({ user, profile, setProfile }) {
             <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 18 }}>{user?.name ?? 'Alex Kumar'}</div>
             <div style={{ color: TOKENS.muted, fontSize: 13 }}>{user?.email ?? 'alex@example.com'}</div>
             <div style={{ marginTop: 7, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Tag color={TOKENS.warn}>Legend · Level 8</Tag>
+              <Tag color={TOKENS.warn}>{levelTitle} · Level {xp.level}</Tag>
               <Tag color={TOKENS.accent}>Joined {joinLabel}</Tag>
             </div>
           </div>
@@ -54,7 +59,7 @@ export default function SettingsPage({ user, profile, setProfile }) {
       <Card>
         <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Timer Settings</div>
         {[
-          ['Focus Duration', 'focusDuration', 15, 60, 'min'],
+          ['Focus Session', 'focusDuration', 15, 60, 'min'],
           ['Short Break', 'breakDuration', 1, 15, 'min'],
         ].map(([label, key, min, max, unit]) => (
           <div key={key} style={{ marginBottom: 16 }}>
