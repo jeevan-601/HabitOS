@@ -37,11 +37,9 @@ export default function FocusPage({ tasks, profile, setProfile }) {
   // FIX: sessions starts at 0, not 2
   const [sessions, setSessions] = useState(0);
   const [selectedTask, setSelectedTask] = useState(tasks.find((task) => !task.done)?.id ?? tasks[0]?.id ?? 0);
-  const [soundOn, setSoundOn] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState('rain');
   const [justFinished, setJustFinished] = useState(false);
   const timerRef = useRef(null);
-  const audioRef = useRef(null);
+  
 
   const mode = MODES[modeIndex];
   const totalDuration = getModeDuration(modeIndex);
@@ -163,16 +161,7 @@ export default function FocusPage({ tasks, profile, setProfile }) {
     nextModeIndexRef.current = null;
   };
 
-  // Keep audio in sync with soundOn and selectedTrack
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (soundOn) {
-      audio.play().catch(() => {});
-    } else {
-      audio.pause();
-    }
-  }, [soundOn, selectedTrack]);
+  
 
   useEffect(() => {
     if (!running) {
@@ -251,24 +240,7 @@ export default function FocusPage({ tasks, profile, setProfile }) {
     setSeconds(getModeDuration(modeIndex));
   };
 
-  const toggleSound = () => {
-    setSoundOn((prev) => !prev);
-  };
-
-  const selectTrack = (trackId) => {
-    setSelectedTrack(trackId);
-    setSoundOn(true);
-  };
-
-  const tracks = [
-    { id: 'rain', label: 'Rain', src: '/media/rain.mp4', emoji: '🌧', description: 'Soft rain loop' },
-    { id: 'waves', label: 'Waves', src: '/media/waves.mp4', emoji: '🌊', description: 'Ocean ambience' },
-    { id: 'forest', label: 'Forest', src: '/media/forest.mp4', emoji: '🌿', description: 'Nature ambience' },
-    { id: 'cafe', label: 'Cafe', src: '/media/cafe.mp4', emoji: '☕', description: 'Low chatter' },
-    { id: 'custom', label: 'Your MP4', src: '/media/music.mp4', emoji: '🎵', description: 'Drop your file here' },
-  ];
-
-  const activeTrack = tracks.find((track) => track.id === selectedTrack) ?? tracks[0];
+  
 
   return (
     <div className="app-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -467,13 +439,11 @@ export default function FocusPage({ tasks, profile, setProfile }) {
           <Button onClick={handleStart} size="lg" style={{ width: 72, height: 72, borderRadius: '50%', fontSize: 24 }}>
             {running ? '⏸' : '▶'}
           </Button>
-          <Button variant="ghost" onClick={toggleSound} style={{ color: soundOn ? TOKENS.accent : TOKENS.muted }}>♫</Button>
         </div>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', fontSize: 13, color: TOKENS.muted }}>
           <Tag color={TOKENS.success}>Sessions today: {sessions}</Tag>
           <Tag color={mode.color}>Timer mode: {mode.label}</Tag>
-          <Tag color={soundOn ? TOKENS.accent : TOKENS.muted}>{soundOn ? `Playing ${activeTrack.label}` : 'Sound off'}</Tag>
         </div>
       </Card>
 
@@ -519,42 +489,12 @@ export default function FocusPage({ tasks, profile, setProfile }) {
         </div>
       </Card>
 
-      <Card>
-        <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Ambient sound</div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {tracks.map((track) => (
-            <button
-              key={track.id}
-              onClick={() => selectTrack(track.id)}
-              style={{
-                ...soundChipStyle,
-                border: `1px solid ${selectedTrack === track.id ? TOKENS.accent : TOKENS.border}`,
-                background: selectedTrack === track.id ? `${TOKENS.accent}18` : TOKENS.card2,
-              }}
-            >
-              {track.emoji} {track.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ marginTop: 12, fontSize: 12, color: TOKENS.muted, lineHeight: 1.6 }}>
-          Put your MP4 file in <span style={{ color: TOKENS.text }}>public/media/music.mp4</span>. The app will stream it in the focus player.
-        </div>
-        <audio ref={alertAudioRef} src="/media/alert.mp3" preload="auto" onEnded={handleAlertEnded} />
-        {/* FIX: key forces <audio> to remount when track changes so src updates properly */}
-        <audio key={activeTrack.src} ref={audioRef} src={activeTrack.src} loop preload="auto" />
-      </Card>
+      <audio ref={alertAudioRef} src="/media/alert.mp3" preload="auto" onEnded={handleAlertEnded} />
     </div>
   );
 }
 
-const soundChipStyle = {
-  padding: '9px 14px',
-  borderRadius: 999,
-  background: TOKENS.card2,
-  border: `1px solid ${TOKENS.border}`,
-  color: TOKENS.text,
-  cursor: 'pointer',
-};
+
 
 function formatDurationInput(totalSeconds) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
